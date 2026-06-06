@@ -104,6 +104,12 @@ const menuItems = computed(() => {
   const album: MenuItem = { column: 'album', label: 'Album', field: 'album_name', visibilityToggleable: true }
   const track: MenuItem = { column: 'track', label: 'Track & Disc', field: 'track', visibilityToggleable: true }
   const time: MenuItem = { column: 'duration', label: 'Time', field: 'length', visibilityToggleable: true }
+  const mostPlayed: MenuItem = {
+    column: 'play_count',
+    label: 'Most Played',
+    field: 'play_count',
+    visibilityToggleable: true,
+  }
   const genre: MenuItem = { column: 'genre', label: 'Genre', field: 'genre', visibilityToggleable: true }
   const year: MenuItem = { column: 'year', label: 'Year', field: 'year', visibilityToggleable: true }
   const rating: MenuItem = { column: 'rating', label: 'Rating', field: 'rating', visibilityToggleable: true }
@@ -140,12 +146,12 @@ const menuItems = computed(() => {
     visibilityToggleable: true,
   }
 
-  let items: MenuItem[] = [title, album, artist, track, genre, year, rating, time, favorite, dateAdded]
+  let items: MenuItem[] = [title, album, artist, track, mostPlayed, genre, year, time, dateAdded]
 
   if (contentType.value === 'episodes') {
-    items = [title, podcast, author, rating, time, favorite, dateAdded]
+    items = [title, podcast, author, mostPlayed, time, dateAdded]
   } else if (contentType.value === 'mixed') {
-    items = [title, albumOrPodcast, artistOrAuthor, rating, time, favorite, dateAdded]
+    items = [title, albumOrPodcast, artistOrAuthor, mostPlayed, time, dateAdded]
   }
 
   if (collaborative.value) {
