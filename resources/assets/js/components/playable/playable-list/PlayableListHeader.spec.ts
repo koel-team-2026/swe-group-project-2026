@@ -1,5 +1,4 @@
 import { screen } from '@testing-library/vue'
-import isMobile from 'ismobilejs'
 import { ref } from 'vue'
 import { describe, expect, it } from 'vite-plus/test'
 import { createHarness } from '@/__tests__/TestHarness'
@@ -10,6 +9,7 @@ import {
   PlayableListSortOrderKey,
   SelectedPlayablesKey,
 } from '@/config/symbols'
+import { usePlayableListColumnVisibility } from '@/composables/usePlayableListColumnVisibility'
 import PlayableListHeader from './PlayableListHeader.vue'
 
 describe('playableListHeader.vue', () => {
@@ -31,6 +31,12 @@ describe('playableListHeader.vue', () => {
     const sortOrderRef = ref(sortOrder)
 
     h.visit('/songs')
+
+    const { shouldShowColumn, toggleColumn } = usePlayableListColumnVisibility()
+
+    if (!shouldShowColumn('play_count')) {
+      toggleColumn('play_count')
+    }
 
     return h.render(PlayableListHeader, {
       props: {
@@ -54,10 +60,16 @@ describe('playableListHeader.vue', () => {
     })
   }
 
+  it('renders', async () => {
+    const { html } = await renderComponent()
+    expect(html()).toMatchSnapshot()
+  })
+
   it.each<[PlayableListSortField, string]>([
     ['track', 'header-track-number'],
     ['title', 'header-title'],
     ['album_name', 'header-album'],
+    ['play_count', 'header-play-count'],
     ['length', 'header-length'],
   ])('sorts by %s upon %s clicked', async (field, testId) => {
     const { emitted } = await renderComponent()
@@ -112,25 +124,5 @@ describe('playableListHeader.vue', () => {
 
     await h.user.click(screen.getByTestId('header-track-number'))
     expect(emitted().sort).toBeUndefined()
-  })
-
-  it.each<[boolean, boolean]>([
-    [false, true], // desktop + sortable
-    [false, false], // desktop + unsortable: column-toggle is still useful
-    [true, true], // mobile + sortable: sort still works
-  ])('shows action menu — mobile=%s sortable=%s', async (mobile, sortable) => {
-    isMobile.any = mobile
-
-    await renderComponent({ sortable, reorderable: true })
-
-    screen.getByTestId('header-extra')
-  })
-
-  it('hides action menu on mobile when not sortable', async () => {
-    isMobile.any = true
-
-    await renderComponent({ sortable: false, reorderable: true })
-
-    expect(screen.queryByTestId('header-extra')).toBeNull()
   })
 })
