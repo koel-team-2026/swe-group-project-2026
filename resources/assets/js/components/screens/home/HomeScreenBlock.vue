@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-
+import http from '@/services/http'
 const stats = ref({
   songs: 0,
   albums: 0,
   artists: 0,
   duration: 0,
 })
+
 
 const loadingStats = ref(false)
 const statsError = ref(false)
@@ -16,8 +17,8 @@ const fetchLibraryStats = async () => {
   statsError.value = false
 
   try {
-    const response = await fetch('/api/library/stats')
-    stats.value = await response.json()
+    const statsResponse = await http.get('library/stats')
+   stats.value = statsResponse
   } catch {
     statsError.value = true
   } finally {
