@@ -1,144 +1,162 @@
 import { screen } from '@testing-library/vue'
-import isMobile from 'ismobilejs'
-import { ref } from 'vue'
 import { describe, expect, it } from 'vite-plus/test'
 import { createHarness } from '@/__tests__/TestHarness'
-import {
-  PlayableListConfigKey,
-  PlayableListContextKey,
-  PlayableListSortFieldKey,
-  PlayableListSortOrderKey,
-  SelectedPlayablesKey,
-} from '@/config/symbols'
-import { usePlayableListColumnVisibility } from '@/composables/usePlayableListColumnVisibility'
-import PlayableListHeader from './PlayableListHeader.vue'
+import { useLocalStorage } from '@/composables/useLocalStorage'
+import Component from './PlayableListHeaderActionMenu.vue'
 
-describe('playableListHeader.vue', () => {
+describe('playableListHeaderActionMenu.vue', () => {
   const h = createHarness()
 
-  const renderComponent = async (
-    config: Partial<PlayableListConfig> = {
-      sortable: true,
-      reorderable: true,
-    },
-    context: PlayableListContext = {
-      type: 'Album',
-    },
-    selectedPlayables: Playable[] = [],
-    sortField: PlayableListSortField = 'title',
-    sortOrder: SortOrder = 'asc',
-  ) => {
-    const sortFieldRef = ref(sortField)
-    const sortOrderRef = ref(sortOrder)
+  it('contains proper items for song-only lists', () => {
+    h.render(Component)
 
-    h.visit('/songs')
+    ;['Title', 'Album', 'Artist', 'Track & Disc', 'Most Played', 'Time', 'Date Added'].forEach(text =>
+      screen.getByText(text),
+    )
+    ;['Podcast', 'Album or Podcast', 'Author', 'Artist or Author'].forEach(text =>
+      expect(screen.queryByText(text)).toBeNull(),
+    )
+  })
 
-    const { shouldShowColumn, toggleColumn } = usePlayableListColumnVisibility()
+  it('emits the sort event when an item is clicked', async () => {
+    const { emitted } = h.render(Component)
+    await h.user.click(screen.getByText('Title'))
+    expect(emitted().sort[0]).toEqual(['title'])
+  })
 
-    if (!shouldShowColumn('play_count')) {
-      toggleColumn('play_count')
-    }
+  it('sorts by most played', async () => {
+    const { emitted } = h.render(Component)
+    await h.user.click(screen.getByText('Most Played'))
+    expect(emitted().sort[0]).toEqual(['play_count'])
+  })
 
-    return h.render(PlayableListHeader, {
+  it('contains proper items for episode-only lists', () => {
+    h.render(Component, {
       props: {
-        contentType: 'songs',
-      },
-      global: {
-        stubs: {
-          ActionMenu: h.stub(),
-        },
-        provide: {
-          [<symbol>SelectedPlayablesKey]: [ref(selectedPlayables), (value: Playable[]) => (selectedPlayables = value)],
-          [<symbol>PlayableListConfigKey]: [config],
-          [<symbol>PlayableListContextKey]: [context],
-          [<symbol>PlayableListSortFieldKey]: [
-            sortFieldRef,
-            (value: PlayableListSortField) => (sortFieldRef.value = value),
-          ],
-          [<symbol>PlayableListSortOrderKey]: [sortOrderRef, (value: SortOrder) => (sortOrderRef.value = value)],
-        },
+        contentType: 'episodes',
       },
     })
-  }
 
-  it.each<[PlayableListSortField, string]>([
-    ['track', 'header-track-number'],
-    ['title', 'header-title'],
-    ['album_name', 'header-album'],
-    ['play_count', 'header-play-count'],
-    ['length', 'header-length'],
-  ])('sorts by %s upon %s clicked', async (field, testId) => {
-    const { emitted } = await renderComponent()
-
-    await h.user.click(screen.getByTestId(testId))
-    expect(emitted().sort[0]).toEqual([field, 'desc'])
-
-    await h.user.click(screen.getByTestId(testId))
-    expect(emitted().sort[1]).toEqual([field, 'asc'])
+    ;['Title', 'Podcast', 'Author', 'Most Played', 'Time', 'Date Added'].forEach(text => screen.getByText(text))
+    ;['Album', 'Album or Podcast', 'Artist', 'Artist or Author'].forEach(text =>
+      expect(screen.queryByText(text)).toBeNull(),
+    )
   })
 
-  it('shows collaborative columns when collaborative', async () => {
-    await renderComponent({
-      sortable: true,
-      reorderable: true,
-      collaborative: true,
+  it('contains proper items for mixed-content lists', () => {
+    h.render(Component, {
+      props: {
+        contentType: 'mixed',
+      },
     })
 
-    screen.getByTestId('header-collaborator')
-    screen.getByTestId('header-contributed-at')
+    ;['Title', 'Album or Podcast', 'Artist or Author', 'Most Played', 'Date Added'].forEach(text =>
+      screen.getByText(text),
+    )
+    ;['Album', 'Artist', 'Podcast', 'Author'].forEach(text => expect(screen.queryByText(text)).toBeNull())
   })
 
-  it('does not show collaborative columns when not collaborative', async () => {
-    await renderComponent()
-
-    expect(screen.queryByTestId('header-collaborator')).toBeNull()
-    expect(screen.queryByTestId('header-contributed-at')).toBeNull()
-  })
-
-  it.each<[PlayableListSortField, string]>([
-    ['collaboration.user.name', 'header-collaborator'],
-    ['collaboration.added_at', 'header-contributed-at'],
-  ])('sorts collaborative column by %s upon %s clicked', async (field, testId) => {
-    const { emitted } = await renderComponent({
-      sortable: true,
-      reorderable: true,
-      collaborative: true,
+  it('contains collaborative items when collaborative', () => {
+    h.render(Component, {
+      props: {
+        collaborative: true,
+      },
     })
 
-    await h.user.click(screen.getByTestId(testId))
-    expect(emitted().sort[0]).toEqual([field, 'desc'])
-
-    await h.user.click(screen.getByTestId(testId))
-    expect(emitted().sort[1]).toEqual([field, 'asc'])
+    ;['User', 'Contributed'].forEach(text => screen.getByText(text))
   })
 
-  it('cannot be sorted if configured so', async () => {
-    const { emitted } = await renderComponent({
-      sortable: false,
-      reorderable: true,
+  it('does not contain collaborative items when not collaborative', () => {
+    h.render(Component)
+
+    ;['User', 'Contributed'].forEach(text => expect(screen.queryByText(text)).toBeNull())
+  })
+
+  it('sorts by collaborative columns', async () => {
+    const { emitted } = h.render(Component, {
+      props: {
+        collaborative: true,
+      },
     })
 
-    await h.user.click(screen.getByTestId('header-track-number'))
+    await h.user.click(screen.getByText('User'))
+    expect(emitted().sort[0]).toEqual(['collaboration.user.name'])
+
+    await h.user.click(screen.getByText('Contributed'))
+    expect(emitted().sort[1]).toEqual(['collaboration.added_at'])
+  })
+
+  it('has toggleable checkboxes for collaborative columns', async () => {
+    h.actingAsUser().render(Component, {
+      props: {
+        collaborative: true,
+      },
+    })
+
+    ;['User', 'Contributed'].forEach(text => screen.getByTitle(`Click to toggle the ${text} column`))
+  })
+
+  it('has custom order sort if so configured', () => {
+    h.render(Component, {
+      props: {
+        hasCustomOrderSort: true,
+      },
+    })
+
+    screen.getByText('Custom Order')
+  })
+
+  it('does not sort if the list is not sortable', async () => {
+    const { emitted } = h.render(Component, {
+      props: {
+        sortable: false,
+      },
+    })
+
+    await h.user.click(screen.getByText('Title'))
     expect(emitted().sort).toBeUndefined()
   })
 
-  it.each<[boolean, boolean]>([
-    [false, true], // desktop + sortable
-    [false, false], // desktop + unsortable: column-toggle is still useful
-    [true, true], // mobile + sortable: sort still works
-  ])('shows action menu — mobile=%s sortable=%s', async (mobile, sortable) => {
-    isMobile.any = mobile
+  it('has a checkbox to toggle the column visibility', async () => {
+    h.actingAsUser().render(Component)
 
-    await renderComponent({ sortable, reorderable: true })
+    ;['Album', 'Track & Disc', 'Time'].forEach(text => screen.getByTitle(`Click to toggle the ${text} column`))
 
-    screen.getByTestId('header-extra')
+    await h.user.click(screen.getByTitle('Click to toggle the Album column'))
+
+    expect(useLocalStorage().get('playable-list-columns')).toEqual(<PlayableListColumnName[]>[
+      'track',
+      'title',
+      'artist',
+      'duration',
+      'playlist_collaborator',
+      'playlist_added_at',
+    ])
   })
 
-  it('hides action menu on mobile when not sortable', async () => {
-    isMobile.any = true
+  it('gets the column visibility from local storage', async () => {
+    // ensure the localstorage is properly namespaced
+    h.actingAsUser()
 
-    await renderComponent({ sortable: false, reorderable: true })
+    useLocalStorage().set('playable-list-columns', ['track'])
+    h.render(Component)
 
-    expect(screen.queryByTestId('header-extra')).toBeNull()
+    ;[
+      {
+        title: 'Track & Disc',
+        checked: true,
+      },
+      {
+        title: 'Album',
+        checked: false,
+      },
+      {
+        title: 'Time',
+        checked: true,
+      },
+    ].forEach(({ title, checked }) => {
+      const el: HTMLInputElement = screen.getByTitle(`Click to toggle the ${title} column`)
+      expect(el.checked).toBe(checked)
+    })
   })
 })
