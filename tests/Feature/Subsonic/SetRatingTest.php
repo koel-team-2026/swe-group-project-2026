@@ -107,14 +107,12 @@ public function starRatingCanBeSet(): void
     $song = Song::factory()->createOne([
         'owner_id' => $user->id,
     ]);
-
-    Rating::create([
-        'user_id' => $user->id,
-        'rateable_id' => $song->id,
-        'rateable_type' => Song::class,
-        'rating' => 5,
-    ]);
-
+Rating::factory()->createOne([
+    'user_id' => $user->id,
+    'rateable_id' => $song->id,
+    'rateable_type' => Song::class,
+    'rating' => 5,
+]);
     self::assertSame(5, $song->fresh()->getRatingFor($user));
 }
 }
