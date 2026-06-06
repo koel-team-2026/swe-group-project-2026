@@ -235,10 +235,6 @@ public function __toString(): string
     return $this->id;
 }
 
-public static function getTotalDuration(): int
-{
-    return (int) static::sum('length');
-}
 public static function getTotalSongs(): int
 {
     return static::count();
