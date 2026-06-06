@@ -82,7 +82,7 @@ use PhanAn\Poddle\Values\EpisodeMetadata;
  * @property ?string $episode_guid
  * @property ?string $podcast_id
  * @property ?Podcast $podcast
- * * @property int $rating
+  * @property int $rating
  *
  * @method static SongFactory factory(...$parameters)
  */
