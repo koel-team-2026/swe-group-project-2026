@@ -20,13 +20,12 @@
         :key="item.playable.id"
         :item="item"
         :show-disc="showDiscLabel(item.playable)"
-        :draggable="!isMobile.any"
+        draggable="true"
         @click="onClick(item, $event)"
         @dragleave="onDragLeave"
         @dragstart="onDragStart(item, $event)"
         @play="onPlay(item.playable)"
         @contextmenu.prevent="onContextMenu(item, $event)"
-        @request-context-menu="onContextMenu(item, $event)"
         @dragover.prevent="onDragOver"
         @drop.prevent="onDrop(item, $event)"
         @dragend.prevent="onDragEnd"
@@ -36,7 +35,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useThrottleFn } from '@vueuse/core'
+import { findIndex, throttle } from 'lodash'
 import isMobile from 'ismobilejs'
 import type { Ref } from 'vue'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
@@ -172,7 +171,7 @@ const clearDropTarget = () => {
   currentDropTarget = null
 }
 
-const onDragOver = useThrottleFn((event: DragEvent) => {
+const onDragOver = throttle((event: DragEvent) => {
   if (!config.reorderable) {
     return
   }
@@ -308,7 +307,7 @@ const showDiscLabel = (row: Playable) => {
     return false
   }
 
-  const index = rows.value.findIndex(({ playable }) => playable.id === row.id)
+  const index = findIndex(rows.value, ({ playable }) => playable.id === row.id)
   return discIndexMap.value[index] !== undefined
 }
 
@@ -329,7 +328,7 @@ const calculatedItemHeight = computed(() => {
 })
 
 const scrollToPlayable = (playable: Playable) => {
-  const index = rows.value.findIndex(row => row.playable.id === playable.id)
+  const index = findIndex(rows.value, row => row.playable.id === playable.id)
 
   if (index >= 0) {
     virtualScroller.value?.scrollToIndex(index)
@@ -345,7 +344,6 @@ onMounted(() => render())
 </script>
 
 <style lang="postcss">
-@reference '@css/app.pcss';
 .playable-list-wrap {
   .virtual-scroller {
     @apply flex-1;
@@ -358,6 +356,10 @@ onMounted(() => render())
   .song-list-header > span,
   .song-item > span {
     @apply text-left p-2 align-middle truncate;
+
+    &.play-count {
+      @apply basis-16 text-right;
+    }
 
     &.time {
       @apply basis-20 overflow-visible;
@@ -385,14 +387,6 @@ onMounted(() => render())
 
     &.added-at {
       @apply basis-44 text-left;
-    }
-
-    &.rating {
-      @apply basis-36 text-left overflow-visible;
-    }
-
-    &.favorite {
-      @apply basis-16 text-center;
     }
 
     &.extra {
@@ -440,8 +434,8 @@ onMounted(() => render())
       width: 200%;
     }
 
-    .song-item :is(.track-number, .album, .time, .year, .genre, .collaborator, .added-at, .rating, .favorite),
-    .song-list-header :is(.track-number, .album, .time, .year, .genre, .collaborator, .added-at, .rating, .favorite) {
+    .song-item :is(.track-number, .album, .play-count, .time, .year, .genre, .collaborator, .added-at),
+    .song-list-header :is(.track-number, .album, .play-count, .time, .year, .genre, .collaborator, .added-at) {
       display: none;
     }
 
