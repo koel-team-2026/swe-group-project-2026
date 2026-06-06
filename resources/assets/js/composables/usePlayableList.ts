@@ -1,5 +1,4 @@
-import { differenceBy, orderBy } from 'lodash-es'
-import { useThrottleFn } from '@vueuse/core'
+import { differenceBy, orderBy, take, throttle } from 'lodash'
 import type { Ref } from 'vue'
 import { computed, provide, reactive, ref } from 'vue'
 import { commonStore } from '@/stores/commonStore'
@@ -94,6 +93,8 @@ export const usePlayableList = (
 
     if (sortField.value === 'track') {
       extended = ['disc', 'track', 'title']
+    } else if (sortField.value === 'play_count') {
+      extended = ['play_count', 'title']
     } else if (sortField.value.includes('album_name') && !sortField.value.includes('disc')) {
       extended.push('artist_name', 'disc', 'track', 'title')
     } else if (sortField.value.includes('artist_name') && !sortField.value.includes('disc')) {
@@ -128,7 +129,7 @@ export const usePlayableList = (
 
     const sampleCovers = playablesWithCover.slice(0, 100).map(p => getPlayableProp(p, 'album_cover', 'episode_image'))
 
-    return Array.from(new Set(sampleCovers)).slice(0, 4)
+    return take(Array.from(new Set(sampleCovers)), 4)
   })
 
   const getPlayablesToPlay = () => playableList.value!.getAllPlayablesWithSort()
@@ -140,7 +141,7 @@ export const usePlayableList = (
 
   const playSelected = (shuffle: boolean) => playback().queueAndPlay(selectedPlayables.value, shuffle)
 
-  const applyFilter = useThrottleFn((keywords: string) => (filterKeywords.value = keywords), 200, true)
+  const applyFilter = throttle((keywords: string) => (filterKeywords.value = keywords), 200)
 
   const filteredPlayables = computed(() => {
     // This manually accesses playables.value, forcing Vue to properly track playables.value changes and re-compute.
