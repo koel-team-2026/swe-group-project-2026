@@ -10,7 +10,9 @@ describe('playableListHeaderActionMenu.vue', () => {
   it('contains proper items for song-only lists', () => {
     h.render(Component)
 
-    ;['Title', 'Album', 'Artist', 'Track & Disc', 'Time', 'Date Added'].forEach(text => screen.getByText(text))
+    ;['Title', 'Album', 'Artist', 'Track & Disc', 'Most Played', 'Time', 'Date Added'].forEach(text =>
+      screen.getByText(text),
+    )
     ;['Podcast', 'Album or Podcast', 'Author', 'Artist or Author'].forEach(text =>
       expect(screen.queryByText(text)).toBeNull(),
     )
@@ -21,6 +23,11 @@ describe('playableListHeaderActionMenu.vue', () => {
     await h.user.click(screen.getByText('Title'))
     expect(emitted().sort[0]).toEqual(['title'])
   })
+  it('sorts by most played', async () => {
+    const { emitted } = h.render(Component)
+    await h.user.click(screen.getByText('Most Played'))
+    expect(emitted().sort[0]).toEqual(['play_count'])
+  })
 
   it('contains proper items for episode-only lists', () => {
     h.render(Component, {
@@ -29,7 +36,7 @@ describe('playableListHeaderActionMenu.vue', () => {
       },
     })
 
-    ;['Title', 'Podcast', 'Author', 'Time', 'Date Added'].forEach(text => screen.getByText(text))
+    ;['Title', 'Podcast', 'Author', 'Most Played','Time', 'Date Added'].forEach(text => screen.getByText(text))
     ;['Album', 'Album or Podcast', 'Artist', 'Artist or Author'].forEach(text =>
       expect(screen.queryByText(text)).toBeNull(),
     )
@@ -42,7 +49,7 @@ describe('playableListHeaderActionMenu.vue', () => {
       },
     })
 
-    ;['Title', 'Album or Podcast', 'Artist or Author', 'Date Added'].forEach(text => screen.getByText(text))
+    ;['Title', 'Album or Podcast', 'Artist or Author',  'Most Played','Date Added'].forEach(text => screen.getByText(text))
     ;['Album', 'Artist', 'Podcast', 'Author'].forEach(text => expect(screen.queryByText(text)).toBeNull())
   })
 
