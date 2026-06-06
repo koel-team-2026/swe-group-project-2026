@@ -18,6 +18,7 @@ vi.mock('@/composables/useOfflinePlayback', () => ({
   }),
 }))
 
+import { usePlayableListColumnVisibility } from '@/composables/usePlayableListColumnVisibility'
 import Component from './PlayableListItem.vue'
 
 describe('playableListItem.vue', () => {
@@ -35,7 +36,7 @@ describe('playableListItem.vue', () => {
   })
 
   const renderComponent = (playable?: Playable, showDisc = false) => {
-    playable = playable ?? h.factory('song').make({ favorite: false })
+    playable = playable ?? h.factory('song', { favorite: false })
 
     const row = {
       playable,
@@ -56,7 +57,7 @@ describe('playableListItem.vue', () => {
   }
 
   it('renders song details', () => {
-    const song = h.factory('song').make({
+    const song = h.factory('song', {
       title: 'Test Song',
       album_name: 'Test Album',
       artist_name: 'Test Artist',
@@ -82,7 +83,7 @@ describe('playableListItem.vue', () => {
   })
 
   it('renders disc info when showDisc is true', async () => {
-    const song = h.factory('song').make({
+    const song = h.factory('song', {
       disc: 2,
       title: 'Test Song',
     })
@@ -93,7 +94,7 @@ describe('playableListItem.vue', () => {
   })
 
   it('shows collaboration info when collaborative', () => {
-    const song = h.factory('song').make({
+    const song = h.factory('song', {
       collaboration: {
         user: { name: 'Alice', avatar: 'https://example.com/alice.jpg' },
         added_at: '2025-01-01',
@@ -116,7 +117,7 @@ describe('playableListItem.vue', () => {
   })
 
   it('does not show collaboration info when not collaborative', () => {
-    const song = h.factory('song').make({
+    const song = h.factory('song', {
       collaboration: {
         user: { name: 'Alice', avatar: 'https://example.com/alice.jpg' },
         added_at: '2025-01-01',
@@ -131,6 +132,15 @@ describe('playableListItem.vue', () => {
     })
 
     expect(queryByText('Jan 1, 2025')).toBeNull()
+  })
+
+  it('shows play count when the column is visible', () => {
+    usePlayableListColumnVisibility().toggleColumn('play_count')
+
+    renderComponent(h.factory('song', { play_count: 42 }))
+
+    screen.getByTestId('play-count')
+    screen.getByText('42')
   })
 
   it('toggles favorite state when the Favorite button is clicked', async () => {
