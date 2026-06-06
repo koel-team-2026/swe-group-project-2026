@@ -10,19 +10,19 @@
           v-for="item in menuItems"
           :key="item.label"
           :class="currentlySortedBy(item.field) && 'active'"
-          class="cursor-pointer group flex justify-between pl-3! hover:bg-k-highlight! hover:text-k-highlight-fg!"
+          class="cursor-pointer group flex justify-between !pl-3 hover:!bg-k-highlight hover:!text-k-highlight-fg"
           @click="sortable && sort(item.field)"
         >
           <label
             v-if="shouldShowColumnVisibilityCheckboxes()"
             class="w-4 mr-2.5 flex items-center"
-            @click.stop="toggle(item)"
+            @click.stop="item.visibilityToggleable && toggleColumn(item.column!)"
           >
             <input
               :checked="shouldShowColumn(item.column!)"
               :disabled="!item.visibilityToggleable"
               :title="item.visibilityToggleable ? `Click to toggle the ${item.label} column` : ''"
-              class="disabled:opacity-20 disabled:cursor-not-allowed bg-k-fg group-hover:border-k-highlight-fg h-4 aspect-square rounded-sm checked:border-k-fg-70 checked:border-2 checked:bg-k-highlight"
+              class="disabled:opacity-20 disabled:cursor-not-allowed bg-k-fg group-hover:border-k-highlight-fg h-4 aspect-square rounded checked:border-k-fg-70 checked:border-2 checked:bg-k-highlight"
               type="checkbox"
             />
           </label>
@@ -39,13 +39,12 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual } from 'lodash-es'
+import { isEqual } from 'lodash'
 import { faArrowDown, faArrowUp, faCheck, faEllipsis, faSort } from '@fortawesome/free-solid-svg-icons'
 import { computed, ref, toRefs } from 'vue'
 import { arrayify } from '@/utils/helpers'
 import type { getPlayableCollectionContentType } from '@/utils/typeGuards'
-import { useTableColumnVisibility } from '@/composables/useTableColumnVisibility'
-import { playableListColumnConfig } from '@/config/tables'
+import { usePlayableListColumnVisibility } from '@/composables/usePlayableListColumnVisibility'
 
 import Popover from '@/components/ui/Popover.vue'
 
@@ -70,10 +69,8 @@ const props = withDefaults(
 
 const emit = defineEmits<{ (e: 'sort', field: MaybeArray<PlayableListSortField>): void }>()
 
-type ConfigurableColumn = (typeof playableListColumnConfig.validColumns)[number]
-
 interface MenuItem {
-  column?: ConfigurableColumn
+  column?: PlayableListColumnName
   label: string
   field: MaybeArray<PlayableListSortField>
   visibilityToggleable: boolean
@@ -83,7 +80,7 @@ const {
   shouldShowColumn,
   toggleColumn,
   isConfigurable: shouldShowColumnVisibilityCheckboxes,
-} = useTableColumnVisibility(playableListColumnConfig)
+} = usePlayableListColumnVisibility()
 
 const { field, order, hasCustomOrderSort, contentType, collaborative } = toRefs(props)
 
@@ -112,8 +109,6 @@ const menuItems = computed(() => {
   }
   const genre: MenuItem = { column: 'genre', label: 'Genre', field: 'genre', visibilityToggleable: true }
   const year: MenuItem = { column: 'year', label: 'Year', field: 'year', visibilityToggleable: true }
-  const rating: MenuItem = { column: 'rating', label: 'Rating', field: 'rating', visibilityToggleable: true }
-  const favorite: MenuItem = { column: 'favorite', label: 'Favorite', field: 'favorite', visibilityToggleable: true }
 
   const dateAdded: MenuItem = {
     label: 'Date Added',
@@ -170,20 +165,10 @@ const sort = (field: MaybeArray<PlayableListSortField>) => {
   popover.value?.hide()
 }
 
-const toggle = (item: MenuItem) => {
-  if (!item.visibilityToggleable || !item.column) {
-    return
-  }
-
-  toggleColumn(item.column)
-  popover.value?.hide()
-}
-
 const currentlySortedBy = (field: MaybeArray<PlayableListSortField>) => isEqual(arrayify(field), arrayify(props.field))
 </script>
 
 <style lang="postcss" scoped>
-@reference '@css/app.pcss';
 .active {
   @apply bg-k-highlight text-k-highlight-fg;
 
@@ -192,7 +177,7 @@ const currentlySortedBy = (field: MaybeArray<PlayableListSortField>) => isEqual(
   }
 
   input {
-    @apply border-k-highlight-fg!;
+    @apply border-k-highlight-fg !important;
   }
 }
 </style>
