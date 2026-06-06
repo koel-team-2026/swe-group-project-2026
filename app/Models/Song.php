@@ -243,10 +243,7 @@ public function __toString(): string
 {
     return $this->id;
 }
-public function hasStarRating(): bool
-{
-    return $this->rating > 0;
-}
+
 
 public function isHighlyRated(): bool
 {
