@@ -264,18 +264,7 @@ public function hasStarRating(User $user): bool
     return $this->getRatingFor($user) > 0;
 }
 
-public function getStarRatingFor(User $user): int
-{
-    return max(0, min(5, $this->getRatingFor($user)));
-}
 
-public function isHighlyRatedBy(User $user): bool
-{
-    return $this->getStarRatingFor($user) >= 4;
-}
 
-public function shouldAvoidPlaybackFor(User $user): bool
-{
-    return $this->getStarRatingFor($user) === 1;
-}
+
 }
