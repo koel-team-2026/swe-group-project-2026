@@ -146,10 +146,6 @@ public static function hasAlbums(): bool
     return static::count() > 0;
 }
 
-public static function getAlbumCount(): int
-{
-    return static::count();
-}
 public static function getLibraryAlbumSummary(): array
 {
     return [

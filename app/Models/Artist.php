@@ -133,10 +133,7 @@ class Artist extends Model implements AuditableContract, Embeddable, Favoriteabl
             'name' => $this->name,
         ];
     }
-    public static function getTotalArtists(): int
-{
-    return static::count();
-}
+
 public static function getTotalArtists(): int
 {
     return static::count();
