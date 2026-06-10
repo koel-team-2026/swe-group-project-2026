@@ -69,7 +69,9 @@ use App\Http\Controllers\API\ScrobbleController;
 use App\Http\Controllers\API\SearchYouTubeController;
 use App\Http\Controllers\API\SetLastfmSessionKeyController;
 use App\Http\Controllers\API\Settings\UpdateBrandingController;
+use App\Http\Controllers\API\Settings\UpdateMailSettingsController;
 use App\Http\Controllers\API\Settings\UpdateMediaPathController;
+use App\Http\Controllers\API\Settings\UpdateSearchSettingsController;
 use App\Http\Controllers\API\SongController;
 use App\Http\Controllers\API\SongSearchController;
 use App\Http\Controllers\API\ThemeController;
@@ -142,6 +144,8 @@ Route::prefix('api')
 
             Route::put('settings/media-path', UpdateMediaPathController::class);
             Route::put('settings/branding', UpdateBrandingController::class);
+            Route::put('settings/mail', UpdateMailSettingsController::class);
+            Route::put('settings/search', UpdateSearchSettingsController::class);
 
             Route::get('download/check', CheckDownloadableCountController::class);
 

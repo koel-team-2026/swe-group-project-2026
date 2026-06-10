@@ -7,20 +7,27 @@
     <main class="space-y-6">
       <MediaPathSettingGroup open />
       <BrandingSettingGroup v-if="isPlus" :current-branding="currentBranding" />
+
+      <MailSettingGroup />
+      <SearchSettingGroup />
     </main>
   </ScreenBase>
 </template>
 
 <script lang="ts" setup>
-import ScreenHeader from '@/components/ui/ScreenHeader.vue'
-import ScreenBase from '@/components/screens/ScreenBase.vue'
-import MediaPathSettingGroup from '@/components/screens/settings/MediaPathSettingGroup.vue'
-import BrandingSettingGroup from '@/components/screens/settings/BrandingSettingGroup.vue'
+import ScreenHeader from "@/components/ui/ScreenHeader.vue";
+import ScreenBase from "@/components/screens/ScreenBase.vue";
+import MediaPathSettingGroup from "@/components/screens/settings/MediaPathSettingGroup.vue";
+import BrandingSettingGroup from "@/components/screens/settings/BrandingSettingGroup.vue";
 
-import { useKoelPlus } from '@/composables/useKoelPlus'
-import { useBranding } from '@/composables/useBranding'
+// Yeni Eklediğimiz Modüllerin Import Edilmesi
+import MailSettingGroup from "@/components/screens/settings/MailSettingGroup.vue";
+import SearchSettingGroup from "@/components/screens/settings/SearchSettingGroup.vue";
 
-const { currentBranding } = useBranding()
+import { useKoelPlus } from "@/composables/useKoelPlus";
+import { useBranding } from "@/composables/useBranding";
 
-const { isPlus } = useKoelPlus()
+const { currentBranding } = useBranding();
+
+const { isPlus } = useKoelPlus();
 </script>

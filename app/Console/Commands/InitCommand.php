@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Throwable;
 
-// @mago-ignore lint:too-many-methods,cyclomatic-complexity,kan-defect
 class InitCommand extends Command
 {
     use AskForPassword;
@@ -55,6 +54,10 @@ class InitCommand extends Command
             $this->ensureEnvFileExists();
             $this->maybeGenerateAppKey();
             $this->maybeSetUpDatabase();
+
+            $this->maybeSetUpMail();
+            $this->maybeSetUpSearchProviders();
+
             $this->migrateDatabase();
             $this->maybeSeedDatabase();
             $this->linkStorage();
@@ -172,7 +175,6 @@ class InitCommand extends Command
 
         $this->dotenvEditor->setKeys($config);
 
-        // Set the config so that the next DB attempt uses refreshed credentials
         config([
             'database.default' => $config['DB_CONNECTION'],
             "database.connections.{$config['DB_CONNECTION']}.host" => $config['DB_HOST'],
@@ -181,6 +183,69 @@ class InitCommand extends Command
             "database.connections.{$config['DB_CONNECTION']}.username" => $config['DB_USERNAME'],
             "database.connections.{$config['DB_CONNECTION']}.password" => $config['DB_PASSWORD'],
         ]);
+    }
+
+    private function maybeSetUpMail(): void
+    {
+        if ($this->inNoInteractionMode()) {
+            return;
+        }
+
+        $this->newLine();
+        if (!$this->confirm('Do you want to configure Mail (SMTP) settings now?', false)) {
+            $this->components->task('Mail setup -- skipping');
+            return;
+        }
+
+        $config = [
+            'MAIL_MAILER' => 'smtp',
+            'MAIL_HOST' => $this->anticipate('Mail host', ['smtp.mailgun.org', 'smtp.postmarkapp.com', '127.0.0.1']),
+            'MAIL_PORT' => (string) $this->ask('Mail port', '2525'),
+            'MAIL_USERNAME' => (string) $this->ask('Mail username'),
+            'MAIL_PASSWORD' => (string) $this->ask('Mail password'),
+            'MAIL_ENCRYPTION' => $this->choice('Mail encryption', ['tls', 'ssl', 'null'], 'tls'),
+            'MAIL_FROM_ADDRESS' => (string) $this->ask('Mail from address', 'koel@example.com'),
+        ];
+
+        $this->dotenvEditor->setKeys($config);
+        $this->components->info('Mail settings prepared for saving.');
+    }
+
+    private function maybeSetUpSearchProviders(): void
+    {
+        if ($this->inNoInteractionMode()) {
+            return;
+        }
+
+        $this->newLine();
+        if (!$this->confirm('Do you want to configure a Search Provider (Algolia/Elasticsearch) now?', false)) {
+            $this->components->task('Search provider setup -- skipping');
+            return;
+        }
+
+        $driver = $this->choice(
+            'Search driver',
+            ['database', 'algolia', 'elasticsearch', 'meilisearch', 'null'],
+            'database',
+        );
+
+        $config = ['SCOUT_DRIVER' => $driver];
+
+        if ($driver === 'algolia') {
+            $config['ALGOLIA_APP_ID'] = (string) $this->ask('Algolia App ID');
+            $config['ALGOLIA_SECRET'] = (string) $this->ask('Algolia Secret');
+        } elseif ($driver === 'elasticsearch') {
+            $config['ELASTICSEARCH_HOST'] = (string) $this->ask(
+                'Elasticsearch Host (e.g., localhost:9200)',
+                'localhost:9200',
+            );
+        } elseif ($driver === 'meilisearch') {
+            $config['MEILISEARCH_HOST'] = (string) $this->ask('Meilisearch Host', 'http://127.0.0.1:7700');
+            $config['MEILISEARCH_KEY'] = (string) $this->ask('Meilisearch Key');
+        }
+
+        $this->dotenvEditor->setKeys($config);
+        $this->components->info('Search provider settings prepared for saving.');
     }
 
     private function inNoInteractionMode(): bool
@@ -219,9 +284,6 @@ class InitCommand extends Command
         $attempt = 0;
 
         while (true) {
-            // In non-interactive mode, we must not endlessly attempt to connect.
-            // Doing so will just end up with a huge amount of "failed to connect" logs.
-            // We do retry a little, though, just in case there's some kind of temporary failure.
             if ($attempt >= self::NON_INTERACTION_MAX_DATABASE_ATTEMPT_COUNT && $this->inNoInteractionMode()) {
                 $this->components->error('Maximum database connection attempts reached. Giving up.');
                 break;
@@ -230,7 +292,6 @@ class InitCommand extends Command
             $attempt++;
 
             try {
-                // Make sure the config cache is cleared before another attempt.
                 Artisan::call('config:clear', ['--quiet' => true]);
                 DB::reconnect();
                 Schema::getTables();
@@ -239,9 +300,6 @@ class InitCommand extends Command
             } catch (Throwable $e) {
                 Log::error($e);
 
-                // We only try to update credentials if running in interactive mode.
-                // Otherwise, we require admin intervention to fix them.
-                // This avoids inadvertently wiping credentials if there's a connection failure.
                 if ($this->inNoInteractionMode()) {
                     $warning = sprintf(
                         'Cannot connect to the database. Attempt: %d/%d',
